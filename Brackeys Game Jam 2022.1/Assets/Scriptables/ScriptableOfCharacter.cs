@@ -23,17 +23,14 @@ public class ScriptableOfCharacter : ScriptableObject
     public float attackDelay;   // tempo entre os ataques
 
 
-    // retorna todos os dados de uma forma genérica (ótimo para upgrades na lojinha)
-    public Dictionary<string, string> GetDataAsString()
+    // retorna todos os dados do tipo float de uma forma genérica (ótimo para upgrades na lojinha)
+    public Dictionary<string, float> GetFloatProperties()
     {
-        return new Dictionary<string, string>()
+        return new Dictionary<string, float>()
         {
-            {"specieType",      specieType.ToString()},
-            {"groupType",       groupType.ToString()},
-            {"attackType",      attackType.ToString()},
-            {"damage",          damage.ToString()},
-            {"speed",           speed.ToString()},
-            {"attackDelay",   attackDelay.ToString()},
+            {"damage",          damage},
+            {"speed",           speed},
+            {"attackDelay",     attackDelay},
             
             //{"", },
             //...

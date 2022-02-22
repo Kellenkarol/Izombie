@@ -5,41 +5,51 @@ using UnityEngine;
 
 public class Human : SimpleAI
 {   
-    [SerializeField] private int health;
-    [SerializeField] private float speed;
 
     protected bool transformedInZombie;
 
 
-    public int   Health { get { return health; } set{ health = value; } }
-    public float Speed  { get { return speed; }  set{ speed  = value; } }
-
-
     bool runningOut;
+    Vector2 zombieNearest;
  
     void Start()
     {
+        StopAllCoroutines();
+        LoadData();
         gameObject.tag       = tagOfHuman;
         gameObject.layer     = (int)(Mathf.Round(Mathf.Log(LayerMask.GetMask(tagOfHuman), 2)));
         SetStartVariables();
-        SetAgentSpeed(Speed);
-        StopAllCoroutines();
+        StartCoroutine("KeepTryingToRunAwayFromZombie");
     }
 
     // Update is called once per frame
     void Update()
     {
+        Vector2 opposite=Vector2.zero;
+        bool foundZombie=false;
 
         if(PlayerIsOnRange() && !HasObstacleBetweenThePlayerAndMe())
         {
-            Vector2 opposite = GetOppositeDiretionOfPlayer();
-            target = GetNearstPositionOnNavMesh(opposite* 10 + (Vector2) transform.position);
-            agent.SetDestination(target);
+            opposite = GetOppositeDiretionOfPlayer();
+            foundZombie=true;
+    
+        }
+        else if(GetIfHasOnRange(transform.position, zombieNearest, layerOfZombie, 25) && 
+                 !GetIfHasObstacle(transform.position, zombieNearest))
+        {
+            opposite = GetOppositeDiretion(zombieNearest);
+            foundZombie=true;
         }
         else if(IsOnTheEnd() || stuck)
         {
             stuck = false;
             target = GetNewRandomTargetPosition(true);
+            agent.SetDestination(target);
+        }
+
+        if(foundZombie)
+        {
+            target = GetNearstPositionOnNavMesh(opposite* 10 + (Vector2) transform.position);
             agent.SetDestination(target);
         }
 
@@ -78,6 +88,17 @@ public class Human : SimpleAI
         this.enabled = false;
 
 
+    }
+
+
+    IEnumerator KeepTryingToRunAwayFromZombie()
+    {
+        while(true)
+        {
+            zombieNearest = GetNearestLayerPositionInRadius(transform.position, layerOfZombie);
+            Debug.DrawLine(transform.position, zombieNearest, Color.blue);
+            yield return null;
+        }
     }
 
 }

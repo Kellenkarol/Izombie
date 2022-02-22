@@ -10,17 +10,17 @@ public class SaveLoad
 {
     private static string saveGamePath = Application.persistentDataPath+"/SaveGame";
 
-    public static void SaveGame<T>(T data, string name)
+    public static void Save<T>(T data, string name)
     {
-        string path = $"{saveGamePath}/{name}";
 
-        if(!Directory.Exists(path + "/" + name))
+        if(!Directory.Exists(saveGamePath))
         {
-            Directory.CreateDirectory(path);
-            Debug.LogWarning("O diretório '" + path +"' não existia, mas acabou de ser criado" );
+            Directory.CreateDirectory(saveGamePath);
+            Debug.LogWarning("O diretório '" + saveGamePath +"' não existia, mas acabou de ser criado" );
         }
         
-        path += "/"+typeof(T).ToString()+".data";
+        string path = $"{saveGamePath}/{name}.data";
+        // path += $"/{typeof(T)}.data";
         BinaryFormatter bf = new BinaryFormatter();
         FileStream file = new FileStream(path, FileMode.Create);
         bf.Serialize(file, data);
@@ -29,9 +29,9 @@ public class SaveLoad
     }
 
 
-    public static T LoadGame<T>(string name)
+    public static T Load<T>(string name)
     {
-        string path = $"{saveGamePath}/{name}/{typeof(T)}.data";
+        string path = $"{saveGamePath}/{name}.data";
      
         if (!File.Exists(path))
         {

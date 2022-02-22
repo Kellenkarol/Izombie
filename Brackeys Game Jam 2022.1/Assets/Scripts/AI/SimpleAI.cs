@@ -3,17 +3,56 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.AI;
 using System.Reflection;
+using System.Linq;
+
+
+[System.Serializable]
+public class CharacterData
+{
+    [SerializeField] Dictionary<string, float> properties;
+
+    public Dictionary<string, float> Properties
+    {
+        get
+        {
+            return properties;
+        }
+        set
+        {
+            properties = value;
+        }
+    }
+
+    public CharacterData(Dictionary<string, float> _properties)
+    {
+        Properties = _properties;
+    }
+}
+
+
+
 
 public class SimpleAI : MonoBehaviour
 {
     public string tagOfHuman  = "Human";
     public string tagOfZombie = "Zombie";
 
+    public ScriptableOfCharacter scriptableOfMyData;
+
+    protected Dictionary<string, float> myProperties;
+
+    [SerializeField] private int health;
+    [SerializeField] private float speed;
+
+    public int   Health { get { return health; } set{ health = value; } }
+    public float Speed  { get { return speed; }  set{ speed  = value; } }
+
+
     protected Transform player;
     public LayerMask layerOfObstacles, layerOfHuman, layerOfZombie;
     public float visualDistance, rangeOfRandomPosition=15;
 
-    protected Vector3 target, oldPositionOfThePlayer, newPositionOfThePlayer;
+    protected Vector2 target;
     protected NavMeshAgent agent;
     protected NavMeshObstacle myObstacle;
 
@@ -26,129 +65,19 @@ public class SimpleAI : MonoBehaviour
     protected float _speed;
 
 
-    private List<Vector2> poss = new List<Vector2>();
-
-    // void OnDrawGizmos()
-    // {
-    //     // Draw a yellow sphere at the transform's position
-    //     Gizmos.color = Color.blue;
-    //     foreach(Vector2 pos in poss)
-    //     {
-    //         // print(pos);
-    //         Gizmos.DrawSphere(pos, 0.25f);
-    //     }
-    // }
-
-
-
-    // // Start is called before the first frame update
-    // void Start()
-    // {
-    //     print("--------- A ---------");
-    //     agent                   = GetComponent<NavMeshAgent>();
-    //     // agent.avoidancePriority = GetRandomPriority();
-    //     // transform.position
-    //     // print(agent.path.corners.Length);
-    //     agent.updateRotation    = false;
-    //     agent.updateUpAxis      = false;
-    //     _speed                   = agent._speed;
-
-
-    //     myObstacle              = GetComponent<NavMeshObstacle>();
-
-    //     target = GetNewRandomTargetPosition(true);
-    //     agent.SetDestination(target);
-
-    //     StartCoroutine("ChangeDestinationWhenStuck");
-    // }
-
-
-    // void Update()
-    // {  
-    //     DrawLine(transform.position, target);
-    //     Debug.DrawLine((Vector2) player.position - Vector2.right * 1, (Vector2) player.position - Vector2.right * 8, Color.red);
-
-    //     // follow player --------------------------------------------------------------------
-
-    //         followingPlayer = !HasObstacleBetweenThePlayerAndMe() && PlayerIsOnRange();
-
-    //         if(followingPlayer)
-    //         {
-    //             // StopAllCoroutines();
-    //             StopCoroutine("TryFindThePlayer");
-    //             print("Achei muahahahahaha");
-    //             lastTargetWasThePlayer  = true;
-    //             lostThePlayer           = false;
-    //             target                  = player.position;
-    //             agent.SetDestination(target);
-    //             oldPositionOfThePlayer = player.position;
-    //         }
-    //         else if(lastTargetWasThePlayer && !lostThePlayer)
-    //         {
-    //             print("Perdi o safado");
-    //             newPositionOfThePlayer  = player.position;
-    //             lostThePlayer           = true;
-    //             StopCoroutine("TryFindThePlayer");
-    //             // StopAllCoroutines();
-    //             List<Vector2> closePositions = GetListOfPositionsNearOfThePlayer(6, true, 5, 15, 3);
-    //             closePositions = SortByClosest(closePositions);
-    //             StartCoroutine(TryFindThePlayer(closePositions));
-    //             // target                  = GetNewRandomPositionNearOfThePlayer();
-    //             // agent.SetDestination(target);
-    //         }
-
-    //     // ----------------------------------------------------------------------------------
-
-
-    //     if(((IsOnTheEnd() && !tryingFindPlayer) || stuck))
-    //     {
-    //         stuck           = false;
-    //         target          = GetNewRandomTargetPosition(true);
-    //         agent.SetDestination(target);
-    //     }
-
-    //     LookAt(agent.steeringTarget - transform.position);
-
-    //     return; // ----------------------------------------------------------------------------------------------------------
-
-
-    //     agent.SetDestination(player.position);
-
-
-    //     if(pathFound)
-    //     {
-    //         isOnEnd                     = ((Vector2)(target-transform.position)).magnitude <= 0.1f;
-
-    //         if(!isOnEnd)
-    //         {
-    //             MoveThroughPath(); // movimenta através do caminho
-    //             LookAt(agent.steeringTarget-transform.position); // mantem a rotação na direção do movimento
-    //             return;
-    //         }
-
-    //         // ClearLog();
-    //         // print("isOnEnd");
-
-    //         target = GetNewRandomTargetPosition();
-    //         SetAgentNewDestination(target);
-    //         currentIndexOfPathCorner = 0;
-    //     }
-
-    // }
-
-
-
     // deve ser chamado no start dos filhos
     protected void SetStartVariables()
     {
         StopAllCoroutines();
-        print("SetStartVariables");
+
         agent                   = GetComponent<NavMeshAgent>();
         agent.updateRotation    = false;
         agent.updateUpAxis      = false;
 
         target = GetNewRandomTargetPosition(true);
         agent.SetDestination(target);
+        SetAgentSpeed(myProperties["speed"]);
+
 
         player = GameObject.FindWithTag("Player").transform;
 
@@ -156,24 +85,69 @@ public class SimpleAI : MonoBehaviour
     }
 
 
+    // Save e Load ------------------------------------------------------------------------
+        public void SaveData()
+        {
+            try
+            {
+                CharacterData data = new CharacterData(myProperties);
+                // data.Properties["speed"] = 10;
+                SaveLoad.Save<CharacterData>(data, scriptableOfMyData.Name());
+                Debug.Log($"Salvamendo de {scriptableOfMyData.Name()} feito com sucesso!");
+            }
+            catch (System.Exception e)
+            {
+                Debug.Log($"[!] Erro no salvamendo de {scriptableOfMyData.Name()}!");
+                Debug.LogException(e, this);
+            }
+        }
+
+
+        public void LoadData()
+        {
+            try
+            {
+
+                CharacterData data = SaveLoad.Load<CharacterData>(scriptableOfMyData.Name());
+
+                if(data == null)
+                {
+                    data = new CharacterData(scriptableOfMyData.GetFloatProperties()); // default
+                    Debug.LogWarning($"Não foi encontrado um save para {scriptableOfMyData.Name()}. Usando valores padrões");
+                }
+                else
+                {
+                    print("Save carregado com sucesso");
+                }
+                
+                myProperties = data.Properties;
+
+            }
+            catch (System.Exception e)
+            {
+                Debug.Log($"[!] Erro no carregamento dos dados de {scriptableOfMyData.Name()}!");
+                Debug.LogException(e, this);
+            }
+
+        }
+    // ---------------------------------------------------------------------------------------------------------
+
+
     protected void CheckIfPlayerIsNearAndFollowHim()
     {
         followingPlayer = !HasObstacleBetweenThePlayerAndMe() && PlayerIsOnRange();
         if(followingPlayer)
         {
-            // StopAllCoroutines();
             StopCoroutine("TryFindThePlayer");
             print("Achei muahahahahaha");
             lastTargetWasThePlayer  = true;
             lostThePlayer           = false;
             target                  = player.position;
             agent.SetDestination(target);
-            // oldPositionOfThePlayer = player.position;
         }
         else if(lastTargetWasThePlayer && !lostThePlayer)
         {
             print("Perdi o safado");
-            // newPositionOfThePlayer  = player.position;
             lostThePlayer           = true;
             StopCoroutine("TryFindThePlayer");
             List<Vector2> closePositions = GetListOfPositionsNearOfThePlayer(6, true, 6, 25, 3); //GetListOfPositionsNearOfThePlayer(int count = 2, bool StartWithPlayerPosition = true, float minRange = 5, float maxRange = 15, float maxCountOfExellentPositions = 1)
@@ -215,8 +189,6 @@ public class SimpleAI : MonoBehaviour
         print("Mas eu vou achar ele, nem que seja a última coisa que eu faça");
         tryingFindPlayer = true;
 
-        poss = positions;
-
         foreach(Vector2 position in positions)
         {
             target = position;
@@ -246,19 +218,10 @@ public class SimpleAI : MonoBehaviour
         
     }
 
-    // public void TakeDamage(int damage)
-    // {   
-    //     if(!myHealth)
-    //         myHealth = GetComponent<HealthOfEnemy>();
-
-    //     if(myHealth.Health-damage >= 0)
-    //         myHealth.Health = myHealth.Health-damage;         
-    // }
-
 
     protected bool IsOnTheEnd()
     {
-        return ((Vector2)(target-transform.position)).magnitude <= 0.5f;
+        return (target-(Vector2)transform.position).magnitude <= 0.01f;
     }
 
 
@@ -267,6 +230,17 @@ public class SimpleAI : MonoBehaviour
         return Random.Range(0, 100);
     }
 
+
+    protected bool GetIfHasObstacle(Vector2 origin, Vector2 end)
+    {
+        return Physics2D.Linecast(origin, end, layerOfObstacles);
+    }
+
+    protected bool GetIfHasOnRange(Vector2 origin, Vector2 end, LayerMask layer, float radius)
+    {
+        RaycastHit2D hit = Physics2D.Linecast(origin, end, layer);
+        return hit.distance > 0 && hit.distance <= radius;
+    }
 
     protected void DrawLine(Vector2 start, Vector2 end)
     {
@@ -279,7 +253,7 @@ public class SimpleAI : MonoBehaviour
         while(true)
         {
             Vector2 myOldPosition = transform.position;
-            yield return new WaitForSeconds(2f);
+            yield return new WaitForSeconds(0.5f);
             Vector2 myNewPosition = transform.position;
             // print((myOldPosition-myNewPosition).magnitude);
             if((myOldPosition-myNewPosition).magnitude <= 0.5f)
@@ -585,9 +559,32 @@ public class SimpleAI : MonoBehaviour
     }
 
 
+    public Vector2 GetNearestLayerPositionInRadius(Vector2 origin, LayerMask layer, float radius=25)
+    {
+        List<RaycastHit2D> hits = new List<RaycastHit2D>(Physics2D.CircleCastAll(origin, radius, Vector2.zero, Mathf.Infinity, layer));
+        
+        if(hits.Count == 0)
+            return Vector2.zero;
+
+        hits = hits.OrderBy( x => Vector2.Distance(origin, x.transform.position)).ToList();
+        // print(hits[0].point);
+        Vector2 correctPoint = Physics2D.Linecast(origin, hits[0].point, layer).transform.position;    
+        // Debug.DrawLine((Vector2) origin, correctPoint, Color.blue);
+
+        return correctPoint;
+    }
+
+
     public Vector2 GetOppositeDiretionOfPlayer()
     {
         Vector2 oppositeDirection = (transform.position-player.position).normalized; 
+        return oppositeDirection;
+    }
+
+
+    public Vector2 GetOppositeDiretion(Vector2 position)
+    {
+        Vector2 oppositeDirection = ((Vector2)transform.position-position).normalized; 
         return oppositeDirection;
     }
 
