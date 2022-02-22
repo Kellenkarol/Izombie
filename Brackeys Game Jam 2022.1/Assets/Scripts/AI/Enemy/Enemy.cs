@@ -10,12 +10,11 @@ public class Enemy : Human
     public float AttackRange { get { return attackRange; } set{ attackRange = value; } }
     public float AttackSpeed { get { return attackSpeed; } set{ attackSpeed = value; } }
 
-
  
     void Start()
     {
         gameObject.tag       = tagOfHuman;
-        gameObject.layer     = layerOfHuman;
+        gameObject.layer     = (int)(Mathf.Round(Mathf.Log(LayerMask.GetMask(tagOfHuman), 2)));
         SetStartVariables();
         SetAgentSpeed(Speed);
     }
