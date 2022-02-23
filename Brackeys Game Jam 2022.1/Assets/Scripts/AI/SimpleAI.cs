@@ -9,9 +9,9 @@ using System.Linq;
 [System.Serializable]
 public class CharacterData
 {
-    [SerializeField] Dictionary<string, float> properties;
+    [SerializeField] Dictionary<string, List<float>> properties;
 
-    public Dictionary<string, float> Properties
+    public Dictionary<string, List<float>> Properties
     {
         get
         {
@@ -23,7 +23,7 @@ public class CharacterData
         }
     }
 
-    public CharacterData(Dictionary<string, float> _properties)
+    public CharacterData(Dictionary<string, List<float>> _properties)
     {
         Properties = _properties;
     }
@@ -39,7 +39,7 @@ public class SimpleAI : MonoBehaviour
 
     public ScriptableOfCharacter scriptableOfMyData;
 
-    protected Dictionary<string, float> myProperties;
+    protected Dictionary<string, List<float>> myProperties;
 
     [SerializeField] private int health;
     [SerializeField] private float speed;
@@ -76,7 +76,7 @@ public class SimpleAI : MonoBehaviour
 
         target = GetNewRandomTargetPosition(true);
         agent.SetDestination(target);
-        SetAgentSpeed(myProperties["speed"]);
+        SetAgentSpeed(myProperties["speed"][0]);
 
 
         player = GameObject.FindWithTag("Player").transform;
@@ -91,7 +91,7 @@ public class SimpleAI : MonoBehaviour
             try
             {
                 CharacterData data = new CharacterData(myProperties);
-                // data.Properties["speed"] = 10;
+                // data.Properties["speed"][0] = 20;
                 SaveLoad.Save<CharacterData>(data, scriptableOfMyData.Name());
                 Debug.Log($"Salvamendo de {scriptableOfMyData.Name()} feito com sucesso!");
             }
@@ -107,21 +107,27 @@ public class SimpleAI : MonoBehaviour
         {
             try
             {
-
+                // CharacterData newData = new CharacterData(scriptableOfMyData.GetFloatProperties());
                 CharacterData data = SaveLoad.Load<CharacterData>(scriptableOfMyData.Name());
 
                 if(data == null)
                 {
                     data = new CharacterData(scriptableOfMyData.GetFloatProperties()); // default
+                    // data = newData; // default
                     Debug.LogWarning($"Não foi encontrado um save para {scriptableOfMyData.Name()}. Usando valores padrões");
                 }
                 else
                 {
+                    data = new CharacterData(MergeProperties(scriptableOfMyData.GetFloatProperties(), data.Properties));
                     print("Save carregado com sucesso");
                 }
-                
-                myProperties = data.Properties;
 
+                foreach(KeyValuePair<string, List<float>> a in data.Properties)
+                {
+                    print($"{a.Key}  {a.Value.Count}");
+                }
+                myProperties = data.Properties;
+                
             }
             catch (System.Exception e)
             {
@@ -129,6 +135,26 @@ public class SimpleAI : MonoBehaviour
                 Debug.LogException(e, this);
             }
 
+        }
+
+
+        // essa função é importante para os casos onde se tem adicionado uma nova propriedade no scriptable.
+        // ela mantem o as propriedades sempre atualizadas
+        private Dictionary<string, List<float>> MergeProperties(Dictionary<string, List<float>> propertiesOfScriptable, Dictionary<string, List<float>> propertiesOfSave)
+        {
+            // OBS: propertiesOfSave é mais importante, então ele irá sobrescrever propertiesOfScriptable no caso de chaves iguals
+
+            Dictionary<string, List<float>> mergedProperties = propertiesOfScriptable;
+
+            foreach(KeyValuePair<string, List<float>> prop in propertiesOfSave)
+            {
+                for(int c=0; c<prop.Value.Count; c++)
+                {
+                    mergedProperties[prop.Key][c] = prop.Value[c];
+                }
+            }
+
+            return mergedProperties;
         }
     // ---------------------------------------------------------------------------------------------------------
 
