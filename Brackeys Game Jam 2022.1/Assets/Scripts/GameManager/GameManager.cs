@@ -6,6 +6,9 @@ using System.Linq;
 
 public class GameManager : MonoBehaviour
 {
+
+    public float dificultyIncremment = 0.1f;
+
     private static GameManager _instance;
     public static GameManager Instance
     {
@@ -17,7 +20,7 @@ public class GameManager : MonoBehaviour
         }
     }
     
-    private static Dictionary<string, GameObject> characters = new Dictionary<string, GameObject>();
+    private static Dictionary<string, GameObject> allHumansPrefabsFromResources = new Dictionary<string, GameObject>();
 
 
     // Start is called before the first frame update
@@ -27,7 +30,7 @@ public class GameManager : MonoBehaviour
             DestroyImmediate(this.gameObject);
 
         _instance = this;
-        Setcharacters();
+        Sethumans();
         DontDestroyOnLoad(this.gameObject);
     }
 
@@ -50,13 +53,13 @@ public class GameManager : MonoBehaviour
     }
 
 
-    private void Setcharacters()
+    private void Sethumans()
     {
         var loadedObjects = Resources.LoadAll("Prefabs", typeof(GameObject)).Cast<GameObject>();
 
         foreach(var go in loadedObjects)
         {
-            characters[go.name] = go.gameObject;
+            allHumansPrefabsFromResources[go.name] = go.gameObject;
                 print(go.name);
         }
     }
@@ -64,18 +67,18 @@ public class GameManager : MonoBehaviour
 
     public static GameObject GetCharacterGameObject(string nameOfCharacter)
     {
-        return characters[nameOfCharacter];
+        return allHumansPrefabsFromResources[nameOfCharacter];
     }
 
 
     public static SimpleAI GetSimpleAIOfCharacter(string nameOfCharacter)
     {
-        return characters[nameOfCharacter].GetComponent<SimpleAI>();
+        return allHumansPrefabsFromResources[nameOfCharacter].GetComponent<SimpleAI>();
     }
 
 
-    public static Dictionary<string, GameObject> GetAllCharacters()
+    public static Dictionary<string, GameObject> GetAllHumansFromResources()
     {
-        return characters != null ? characters : new Dictionary<string, GameObject>();
+        return allHumansPrefabsFromResources != null ? allHumansPrefabsFromResources : new Dictionary<string, GameObject>();
     }
 }

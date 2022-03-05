@@ -15,10 +15,14 @@ public class Human : SimpleAI
     void Start()
     {
         StopAllCoroutines();
-        LoadData();
+        LoadData(); // quem deve carregar os dados é o GameManager
         gameObject.tag       = tagOfHuman;
         gameObject.layer     = (int)(Mathf.Round(Mathf.Log(LayerMask.GetMask(tagOfHuman), 2)));
         SetStartVariables();
+
+        // target = player.transform.position; // iniciar seguindo o player caso seja um humano diferente do tipo civil
+        // agent.SetDestination(target);
+
         StartCoroutine("KeepTryingToRunAwayFromZombie");
     }
 
@@ -31,19 +35,20 @@ public class Human : SimpleAI
         if(PlayerIsOnRange() && !HasObstacleBetweenThePlayerAndMe())
         {
             opposite = GetOppositeDiretionOfPlayer();
-            foundZombie=true;
-    
+            foundZombie = true;
+            // print("[1]");
         }
         else if(GetIfHasOnRange(transform.position, zombieNearest, layerOfZombie, 25) && 
                  !GetIfHasObstacle(transform.position, zombieNearest))
         {
             opposite = GetOppositeDiretion(zombieNearest);
             foundZombie=true;
+            // print("[2]     "+!GetIfHasObstacle(transform.position, zombieNearest));
         }
         else if(IsOnTheEnd() || stuck)
         {
             stuck = false;
-            target = GetNewRandomTargetPosition(true);
+            target = GetNewRandomTargetPosition();
             agent.SetDestination(target);
         }
 
@@ -52,26 +57,29 @@ public class Human : SimpleAI
             target = GetNearstPositionOnNavMesh(opposite* 10 + (Vector2) transform.position);
             agent.SetDestination(target);
         }
+        
+        ChangeAnimation();
 
         Debug.DrawLine(transform.position, target, Color.red);
-        LookAt(agent.steeringTarget - transform.position);
+        if(foundZombie)
+            Debug.DrawLine(transform.position, zombieNearest, Color.blue);
+        // LookAt(agent.steeringTarget - transform.position);
     }
 
 
-
-    public override void TakeDamage(int damage)
-    {        
-        print("Chamou 'TakeDamage' do Human");
+    // public override void TakeDamage(int damage)
+    // {        
+    //     print("Chamou 'TakeDamage' do Human");
         
-        if(Health-damage < 0)
-            return;
+    //     if(Health-damage < 0)
+    //         return;
             
-        Health = Health-damage;   
+    //     Health = Health-damage;   
 
-        if(Health == 0)
-            TransformInZombie();
+    //     if(Health == 0)
+    //         TransformInZombie();
 
-    }
+    // }
 
 
     public override void TransformInZombie()
@@ -96,7 +104,7 @@ public class Human : SimpleAI
         while(true)
         {
             zombieNearest = GetNearestLayerPositionInRadius(transform.position, layerOfZombie);
-            Debug.DrawLine(transform.position, zombieNearest, Color.blue);
+            // Debug.DrawLine(transform.position, zombieNearest, Color.blue);
             yield return null;
         }
     }

@@ -21,6 +21,7 @@ public class Zombie : SimpleAI
     void Start()
     {
         StopAllCoroutines();
+        LoadData(); // quem deve carregar os dados é o GameManager
         
         gameObject.tag       = tagOfZombie;
         
@@ -28,9 +29,9 @@ public class Zombie : SimpleAI
         GameManager.SetLayerOfGameObjectAndChilds(gameObject, newLayer);
 
         SetStartVariables();
-        SetAgentSpeed(Speed);
+        // SetAgentSpeed(Speed);
         // KeepFollowingThePlayer(3); 
-        StartCoroutine("KeepLookingToNearestHuman");
+        // StartCoroutine("KeepLookingToNearestHuman");
     }
 
     // Start is called before the first frame update
@@ -42,27 +43,46 @@ public class Zombie : SimpleAI
     // Update is called once per frame
     void Update()
     {
-        LookAt(agent.steeringTarget - transform.position);
+        ChangeAnimation();
+        return;
         // humanNearest = GetNearestLayerPositionInRadius();
-        followingEnemy = true;
+        followingEnemy = false;
 
         // print((target - humanNearest).magnitude);
 
-        if((target - humanNearest).magnitude > 0.5f && humanNearest.magnitude > 0.0001f)
+        if(humanNearest.magnitude > 0.0001f)
         {
             followingEnemy  = true;
             target = humanNearest;
             agent.SetDestination(target);
+
+            // print("Following human");
         }
-        Debug.DrawLine((Vector2)transform.position, target+(Vector2)transform.right*0.1f, Color.white);
+
+        // if((target - humanNearest).magnitude > 0.5f && humanNearest.magnitude > 0.0001f)
+        // {
+        //     followingEnemy  = true;
+        //     target = humanNearest;
+        //     agent.SetDestination(target);
+        //     print("Following human");
+        // }
+        // Debug.DrawLine((Vector2)transform.position, target+(Vector2)transform.right*0.1f, Color.white);
 
         if(followingEnemy)
             return;
 
-        if((player.position-transform.position).magnitude > 5)
+        if((player.position-transform.position).magnitude > 1.5f)
         {
             KeepFollowingThePlayer(3);
+            // print("Following player");
         }
+        else if(target != (Vector2)transform.position)
+        {
+            target = transform.position;
+            agent.SetDestination(target);
+        }
+
+
     }
 
     public void Attack()
@@ -86,6 +106,7 @@ public class Zombie : SimpleAI
 
     IEnumerator KeepLookingToNearestHuman()
     {
+
         while(true)
         {
             humanNearest = GetNearestLayerPositionInRadius(transform.position, layerOfHuman);

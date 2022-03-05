@@ -41,48 +41,164 @@ public class SimpleAI : MonoBehaviour
 
     protected Dictionary<string, List<float>> myProperties;
 
-    [SerializeField] private int health;
-    [SerializeField] private float speed;
+    // [SerializeField] private int health;
+    // [SerializeField] private float speed;
 
-    public int   Health { get { return health; } set{ health = value; } }
-    public float Speed  { get { return speed; }  set{ speed  = value; } }
+    // public int   Health { get { return health; } set{ health = value; } }
+    // public float Speed  { get { return speed; }  set{ speed  = value; } }
 
 
     protected Transform player;
     public LayerMask layerOfObstacles, layerOfHuman, layerOfZombie;
     public float visualDistance, rangeOfRandomPosition=15;
 
-    protected Vector2 target;
-    protected NavMeshAgent agent;
+    [HideInInspector] public Vector2 target;
+    [HideInInspector] public NavMeshAgent agent;
     protected NavMeshObstacle myObstacle;
 
     Vector3[] cornersOfPath;
 
-    HealthOfEnemy myHealth;
+    // HealthOfEnemy myHealth;
 
     protected bool isOnEnd, pathFound, stuck, followingPlayer, lastTargetWasThePlayer, lostThePlayer, tryingFindPlayer;
     protected int currentIndexOfPathCorner;
     protected float _speed;
+
+    BoxCollider2D areaOfMap;
+
+    Animator myAnim;
+    Renderer myRenderer;
 
 
     // deve ser chamado no start dos filhos
     protected void SetStartVariables()
     {
         StopAllCoroutines();
-
-        agent                   = GetComponent<NavMeshAgent>();
+        areaOfMap               = GameObject.Find("Grid").GetComponent<BoxCollider2D>();
+        myAnim                  = GetComponent<Animator>();     
+        myRenderer              = GetComponent<Renderer>();   
+        agent                   = GetComponent<NavMeshAgent>(); 
+        // agent.enabled           = false;
         agent.updateRotation    = false;
         agent.updateUpAxis      = false;
 
         target = GetNewRandomTargetPosition(true);
-        agent.SetDestination(target);
-        SetAgentSpeed(myProperties["speed"][0]);
+        SetAgentDestination(target);
+        SetAgentSpeed(8);
+        // print("myProperties['speed'][0]:   "+myProperties["speed"][0]);
+        // SetAgentSpeed(myProperties["speed"][0]);
 
+        transform.rotation = Quaternion.identity;
 
         player = GameObject.FindWithTag("Player").transform;
 
         StartCoroutine("ChangeDestinationWhenStuck");
+        // RandomPriority(); 
+        
+        // StartCoroutine("KeepUpdatingRendererSorter");
     }
+
+
+
+
+    // movimentação e animação -------------------------------------------------
+
+        // void LateUpdate()
+        // {
+        //     UpdateRendererSorter(); // atualiza a ordem do sprite, deixando na frente os que estiverem mais próximos da tela 
+        // }
+
+        public void SetAgentDestination(Vector2 destination)
+        {
+            target = destination;
+            // if(!(agent.velocity.magnitude < 0.15))
+                agent.SetDestination(target);
+        }
+
+        protected void UpdateRendererSorter()
+        {
+            int sortingOrderBase = 5000;
+            myRenderer.sortingOrder = (int)(sortingOrderBase - transform.position.y);
+        }
+
+        protected IEnumerator KeepUpdatingRendererSorter()
+        {
+            while(true)
+            {
+                UpdateRendererSorter();
+                yield return new WaitForSeconds(0.2f);
+                // yield return null;
+            }
+        }
+
+
+        protected Vector3 GetUnitary(Vector3 vector)
+        {
+            Vector3 newVector = vector;
+            newVector.x = newVector.x > 0 ? Mathf.Ceil(newVector.x) : Mathf.Floor(newVector.x);
+            newVector.y = newVector.y > 0 ? Mathf.Ceil(newVector.y) : Mathf.Floor(newVector.y);
+            newVector.z = newVector.z > 0 ? Mathf.Ceil(newVector.z) : Mathf.Floor(newVector.z);
+            return newVector;
+        }
+
+
+        protected Vector2 SwitchToOnlyOneOfFourDirections(Vector2 direction)
+        {
+            // tranforma um vetor direção em um com a direção mais próxima de "Vecto2.up, -Vecto2.up, Vecto2.right, -Vecto2.right, Vector2.zero"
+
+            if(Mathf.Abs(direction.x) < Mathf.Abs(direction.y))
+            {
+                return Vector2.up * (Mathf.Abs(direction.y)/direction.y);
+            }
+            else if(direction.x+direction.y != 0)
+            {
+                return Vector2.right * (Mathf.Abs(direction.x)/direction.x);
+            }
+            return Vector2.zero;
+
+        }
+
+
+        protected void ChangeAnimation()
+        {
+            Vector2 direction = Vector2.zero;
+            // if((target-(Vector2)transform.position).magnitude > 1f)
+            // print($"agent.isStopped = {agent.isStopped}");
+            if(!(agent.velocity.magnitude < 0.15f))
+            {
+                // print($"target = {target} e transform.position = {(Vector2) transform.position}");
+                direction = agent.steeringTarget - transform.position;
+            }
+            else
+            {
+            }
+            direction = Vector3.ClampMagnitude(direction, 1);
+            direction = SwitchToOnlyOneOfFourDirections(direction);
+            Vector3 unitaryDirection = GetUnitary(direction);
+
+            if(unitaryDirection.x == 1)
+            {
+                myAnim.Play("WalkingToRight");
+            }
+            else if(unitaryDirection.x == -1)
+            {
+                myAnim.Play("WalkingToLeft");
+            }
+            else if(unitaryDirection.y == 1)
+            {
+                // print("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:   "+unitaryDirection);
+                myAnim.Play("WalkingToUp");
+            }
+            else if(unitaryDirection.y == -1)
+            {
+
+                myAnim.Play("WalkingToDown");
+            }
+            else
+            {
+                myAnim.Play("Stoped");
+            }
+        }
 
 
     // Save e Load ------------------------------------------------------------------------
@@ -122,10 +238,10 @@ public class SimpleAI : MonoBehaviour
                     print("Save carregado com sucesso");
                 }
 
-                foreach(KeyValuePair<string, List<float>> a in data.Properties)
-                {
-                    print($"{a.Key}  {a.Value.Count}");
-                }
+                // foreach(KeyValuePair<string, List<float>> a in data.Properties)
+                // {
+                //     print($"{a.Key}  {a.Value.Count}");
+                // }
                 myProperties = data.Properties;
                 
             }
@@ -205,6 +321,10 @@ public class SimpleAI : MonoBehaviour
             target          = GetNewRandomTargetPosition(true);
             agent.SetDestination(target);
         }
+        else
+        {
+            print("CheckIsHasNeedChangeDirectionAndDoIt:  false");
+        }
     }
 
 
@@ -231,10 +351,17 @@ public class SimpleAI : MonoBehaviour
 
 
 
-    public virtual void TakeDamage(int damage)
-    {
-        print("Chamou 'TakeDamage' do SimpleEnemyAI");
+    public void TakeDamage(int damage)
+    {        
+        // print("Chamou 'TakeDamage' do Enemy");
+        
+        // if(myProperties["health"][0]-damage < 0)
+        //     return;
+            
+        // myProperties["health"][0] = myProperties["health"][0]-damage;   
 
+        // if(myProperties["health"][0] == 0)
+        //     TransformInZombie();
 
     }
 
@@ -247,13 +374,13 @@ public class SimpleAI : MonoBehaviour
 
     protected bool IsOnTheEnd()
     {
-        return (target-(Vector2)transform.position).magnitude <= 0.01f;
+        return (target-(Vector2)transform.position).magnitude <= 0.02f;
     }
 
 
-    protected int GetRandomPriority()
+    public void RandomPriority()
     {
-        return Random.Range(0, 100);
+        agent.avoidancePriority = Random.Range(0, 100);
     }
 
 
@@ -284,7 +411,7 @@ public class SimpleAI : MonoBehaviour
             // print((myOldPosition-myNewPosition).magnitude);
             if((myOldPosition-myNewPosition).magnitude <= 0.5f)
             {
-                print("Held, i'm stuck");
+                // print("Held, i'm stuck");
                 stuck = true;
             }
 
@@ -537,25 +664,46 @@ public class SimpleAI : MonoBehaviour
     }
 
 
+    protected Vector2 GetRandomPositionInsideMap()
+    {
+        return new Vector2(
+            Random.Range(areaOfMap.bounds.min.x, areaOfMap.bounds.max.x),
+            Random.Range(areaOfMap.bounds.min.y, areaOfMap.bounds.max.y)
+        );    
+    }
+
+
+    protected bool CheckIfPositionIsInsideMap(Vector2 pos)
+    {
+        return areaOfMap.bounds.Contains(pos);
+    }
+
+
     protected Vector3 GetNewRandomTargetPosition(bool toFace=false)
     {
 
         while(true)
         {
-            Vector3 randomDirection = Random.insideUnitSphere * Random.Range(0, rangeOfRandomPosition);
-
-            if(toFace)
+            Vector2 randomPosition = GetRandomPositionInsideMap();
+            if(CheckIfPositionIsInsideMap(randomPosition))
             {
-                randomDirection = transform.right * Random.Range(-rangeOfRandomPosition, rangeOfRandomPosition);
-                randomDirection += transform.up * Random.Range(0, rangeOfRandomPosition);
+                // Vector3 randomDirection = Random.insideUnitSphere * Random.Range(0, rangeOfRandomPosition);
+                // Vector3 randomDirection = randomPosition;
+
+
+                // if(toFace)
+                // {
+                //     randomDirection = transform.right * Random.Range(-rangeOfRandomPosition, rangeOfRandomPosition);
+                //     randomDirection += transform.up * Random.Range(0, rangeOfRandomPosition);
+                // }
+
+                // randomDirection += transform.position;
+
+                NavMeshHit hit;
+
+                if (NavMesh.SamplePosition(randomPosition, out hit, 1000, NavMesh.AllAreas))
+                    return hit.position;
             }
-
-            randomDirection += transform.position;
-
-            NavMeshHit hit;
-
-            if (NavMesh.SamplePosition(randomDirection, out hit, 1000, NavMesh.AllAreas))
-                return hit.position;
         }
     }
 
@@ -576,13 +724,13 @@ public class SimpleAI : MonoBehaviour
         return Physics2D.Linecast(transform.position, player.position, layerOfObstacles).distance != 0;
     }
 
-    public void ClearLog()
-    {
-        var assembly = Assembly.GetAssembly(typeof(UnityEditor.Editor));
-        var type = assembly.GetType("UnityEditor.LogEntries");
-        var method = type.GetMethod("Clear");
-        method.Invoke(new object(), null);
-    }
+    // public void ClearLog()
+    // {
+    //     var assembly = Assembly.GetAssembly(typeof(UnityEditor.Editor));
+    //     var type = assembly.GetType("UnityEditor.LogEntries");
+    //     var method = type.GetMethod("Clear");
+    //     method.Invoke(new object(), null);
+    // }
 
 
     public Vector2 GetNearestLayerPositionInRadius(Vector2 origin, LayerMask layer, float radius=25)
@@ -612,6 +760,16 @@ public class SimpleAI : MonoBehaviour
     {
         Vector2 oppositeDirection = ((Vector2)transform.position-position).normalized; 
         return oppositeDirection;
+    }
+
+    public static Vector2 FindNearestPositionOnNavMesh(Vector2 origin, float maxDistance = 100)
+    {
+        NavMeshHit hit;
+
+        if(NavMesh.SamplePosition(origin, out hit, maxDistance, NavMesh.AllAreas))
+            return hit.position;
+
+        return origin;
     }
 
 
