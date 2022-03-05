@@ -1,0 +1,1 @@
+- Transform.position dos prefabs com NavMeshAgent devem ser zerados (MOTIVO: caso sejam instanciados fora da NavMeshSurface eles bugam)

@@ -13,10 +13,11 @@ public class Enemy : Human
  
     void Start()
     {
+        LoadData(); // quem deve carregar os dados é o GameManager
         gameObject.tag       = tagOfHuman;
         gameObject.layer     = (int)(Mathf.Round(Mathf.Log(LayerMask.GetMask(tagOfHuman), 2)));
         SetStartVariables();
-        SetAgentSpeed(Speed);
+        // SetAgentSpeed(Speed);
     }
 
     // Update is called once per frame
@@ -30,19 +31,19 @@ public class Enemy : Human
 
 
 
-    public override void TakeDamage(int damage)
-    {        
-        print("Chamou 'TakeDamage' do Enemy");
+    // public override void TakeDamage(int damage)
+    // {        
+    //     print("Chamou 'TakeDamage' do Enemy");
         
-        if(Health-damage < 0)
-            return;
+    //     if(Health-damage < 0)
+    //         return;
             
-        Health = Health-damage;   
+    //     Health = Health-damage;   
 
-        if(Health == 0)
-            TransformInZombie();
+    //     if(Health == 0)
+    //         TransformInZombie();
 
-    }
+    // }
 
 
     public override void TransformInZombie()

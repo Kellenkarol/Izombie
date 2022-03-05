@@ -10,11 +10,30 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 43d965b7c6f2bdc4c994112f0c8be91b, type: 3}
-  m_Name: Character
+  m_Name: Character 2
   m_EditorClassIdentifier: 
+  unlocked: 0
   specieType: 0
-  groupType: 4
-  attackType: 2
+  groupType: 1
+  attackType: 1
+  humansNeededDie: 10
+  health: 1
+  healthPrice: 0
+  healthMultiply: 0
+  healthMultiplyPrice: 0
+  healthMax: 0
   damage: 2
+  damagePrice: 0
+  damageMultiply: 0
+  damageMultiplyPrice: 0
+  damageMax: 0
   speed: 2
+  speedPrice: 0
+  speedMultiply: 0
+  speedMultiplyPrice: 0
+  speedMax: 0
   attackDelay: 2
+  attackDelayPrice: 0
+  attackDelayMultiply: 0
+  attackDelayMultiplyPrice: 0
+  attackDelayMax: 0
